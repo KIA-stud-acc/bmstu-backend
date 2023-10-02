@@ -1,10 +1,10 @@
-.search {
+form {
     width:24rem;
     margin:auto;
     margin-bottom: 1rem;
     display: inline-block;
 }
-.form-control .btn-primary{
+input{
     padding:4px 10px;
     border:1;
     font-size:16px;
@@ -66,7 +66,6 @@
 }
 .del{
     width: 2.5rem;
-    height: 2.5rem;
+    height: 2.4rem;
     float: right;
-    border-radius: 0 0 1rem 0;
 }

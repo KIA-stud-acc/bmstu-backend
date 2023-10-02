@@ -1,7 +1,5 @@
 from django.shortcuts import render
-import psycopg2
-conn = psycopg2.connect(dbname="DAG", host="localhost", user="admin", password="admin", port="5432")
-cursor = conn.cursor()
+
 allItems = [
             {'name': "Памятник у храма христа спасителя",
              'src': 'https://avatars.dzeninfra.ru/get-zen_doc/198938/pub_5b7be219c3c1aa00aac7c4f2_5b7be25760eb2700a9ad95fc/scale_1200', 'id': 1,
@@ -31,16 +29,10 @@ def voteList(request, sear = "", items = allItems):
     }})
 
 def search(request):
-    delId = request.POST.get("del", -1)
-    if delId == -1:
-        try:
-            searchQuery = request.GET['text']
-        except:
-            searchQuery = ''
-    else:
+    try:
+        searchQuery = request.GET['text']
+    except:
         searchQuery = ''
-        cursor.execute(f"update \"name options\" set status = 'удалён' where id = {delId}")
-
 
     return voteList(request, searchQuery)
 
