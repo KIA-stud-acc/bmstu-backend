@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel = "stylesheet" href = "{% static "CSS/voting.css" %}">
+    <title>Voting</title>
+</head>
+<body>
+<h>{{ data.name }}</h>
+<br><hr><br>
+<img src = '{{ data.src }}'>
+<br>
+<p>{{ data.desc }}</p>
+<table>
+    {% for i in data.results %}
+    <tr>
+        <td>{{ i.case }}</td>
+        <td>{{ i.votes }}</td>
+    </tr>
+    {% endfor %}
+</table>
+</body>
+</html>

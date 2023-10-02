@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Voting list</title>
+    <link rel = "stylesheet" href = "{% static "CSS/voteList.css" %}">
+{#    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">#}
+
+</head>
+<body>
+
+    <form method="get" enctype="multipart/form-data" class = 'search'>
+    {% csrf_token %}
+    <input name="text" type="text" class="form-control" placeholder="Поиск"  value={{ data.src }}>
+    <input type="submit" value="Найти" class="btn btn-primary">
+    </form>
+    <br>
+    {% for i in data.voteList %}
+        <div class = "card text-center" id = "{{ i.name }}">
+            <img src = "{{ i.src }}" class="card-img-top" alt = "{{ i.name }}">
+            <h5 class="card-title">{{ i.name }}</h5>
+            <div class = "execBtn">
+                <a href="http://127.0.0.1:8000/vybory/{{ i.id }}" class="btn btn-outline-primary">Перейти на страницу голосования</a>
+                <form method = "post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <button type="submit" class = "del" name = 'del' value = {{ i.id }}>
+                        <img src="https://cdn-icons-png.flaticon.com/512/1483/1483063.png" alt="Delete" height = "20"/>
+                    </button>
+                    <!--input type="image" src="https://cdn-icons-png.flaticon.com/512/1483/1483063.png" border="0" alt="Delete" height = "20" class = "del"/-->
+                    <!--<btn class = 'delet'><img src = "https://cdn-icons-png.flaticon.com/512/1483/1483063.png" height = "20" class = "del" alt = "Удалить"></btn>-->
+                </form>
+            </div>
+        </div>
+    {% endfor %}
+</body>
+</html>

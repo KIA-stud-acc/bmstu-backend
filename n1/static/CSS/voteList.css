@@ -1,0 +1,72 @@
+.search {
+    width:24rem;
+    margin:auto;
+    margin-bottom: 1rem;
+    display: inline-block;
+}
+.form-control .btn-primary{
+    padding:4px 10px;
+    border:1;
+    font-size:16px;
+}
+.form-control {
+    width: 16rem;
+}
+.btn-primary{
+    width: 6rem;
+    background-color: #1c87c9;
+    color:#ffffff;
+}
+
+.card{
+    width: 15rem;
+    min-height: 20.5rem;
+    box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    flex-direction: column; /* Размещаем элементы в колонку */
+    border-radius: 1rem;
+    border: solid black 1px;
+    margin-bottom: 0.5em;
+
+    position: absolute;
+    top: 0;
+    position: relative;
+}
+.card-img-top {
+    display: block;
+    top: 0;
+    left: 0;
+    width: 15rem;
+    height: 15rem;
+    border-radius: 1rem 1rem 0 0;
+}
+.card-title {
+    display: block;
+    font-size:1.2em;
+    height: 1rem;
+    margin-top:0.1em;
+    text-align:center;
+}
+.execBtn{
+    width: 15rem;
+    position: absolute;
+    bottom: 0;
+    height: 2.5rem;
+}
+.btn-outline-primary{
+    width: 12.5rem;
+    background-color: #1c87c9;
+    text-align:center;
+    vertical-align: bottom;
+    color:#ffffff;
+    text-decoration: none;
+    float: left;
+    height: 2.5rem;
+    border-radius: 0 0 0 1rem;
+}
+.del{
+    width: 2.5rem;
+    height: 2.5rem;
+    float: right;
+    border-radius: 0 0 1rem 0;
+}
