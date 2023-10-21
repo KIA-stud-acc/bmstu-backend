@@ -1,7 +1,10 @@
 from django.shortcuts import render
 import psycopg2
+from n1.models import NameOptions, Results
 conn = psycopg2.connect(dbname="DAG", host="localhost", user="admin", password="admin", port="5432")
 cursor = conn.cursor()
+
+"""
 allItems = [
             {'name': "Памятник у храма христа спасителя",
              'src': 'https://avatars.dzeninfra.ru/get-zen_doc/198938/pub_5b7be219c3c1aa00aac7c4f2_5b7be25760eb2700a9ad95fc/scale_1200', 'id': 1,
@@ -16,34 +19,25 @@ allItems = [
              'results': [{'case':'Зеленый Уголок', 'votes':21}, {'case':'Оазис Впечатлений', 'votes':35}, {'case':'Уголок Природы', 'votes':12}],
              'desc':'Ухоженный зеленый сквер, названный в честь улицы Колотушкина, служащий отличным местом для отдыха и прогулок в природной атмосфере.'},
         ]
-
-def voteList(request, sear = "", items = allItems):
-
-    selItems = []
-    if sear != "":
-        for i in items:
-            if sear in i['name']:
-                selItems.append(i)
-    else: selItems = items
+"""
+def voteList(request, sear = ""):
     return render(request, 'voteList.html', {'data': {
-        'voteList': selItems,
+        'voteList': NameOptions.objects.filter(status = "действует").filter(name__icontains=sear).order_by('name'),
         'src' : sear
     }})
 
 def search(request):
     delId = request.POST.get("del", -1)
+    searchQuery = ''
     if delId == -1:
-        try:
-            searchQuery = request.GET['text']
-        except:
-            searchQuery = ''
+        searchQuery = request.GET.get('text', "")
     else:
-        searchQuery = ''
-        cursor.execute(f"update \"name options\" set status = 'удалён' where id = {delId}")
+        cursor.execute(f"update public.\"name options\" set status = 'удалён'  where \"ID\" = {delId}")
+        conn.commit()
 
 
     return voteList(request, searchQuery)
 
-def getVoting(request, id, items = allItems):
-    return render(request, 'voting.html', {'data':items[id-1]})
+def getVoting(request, id):
+    return render(request, 'voting.html', {'data':{'voting':NameOptions.objects.filter(id = id)[0], 'results': Results.objects.filter(voting = id)}})
 # Create your views here.
