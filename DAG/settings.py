@@ -70,7 +70,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'DAG.wsgi.application'
+#WSGI_APPLICATION = 'DAG.wsgi.application'
 
 
 # Database
