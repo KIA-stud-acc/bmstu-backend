@@ -7,11 +7,11 @@
     <title>Voting</title>
 </head>
 <body>
-<h>{{ data.name }}</h>
+<h>{{ data.voting.name }}</h>
 <br><hr><br>
-<img src = '{{ data.src }}'>
+<img src = '{{ data.voting.src }}'>
 <br>
-<p>{{ data.desc }}</p>
+<p>{{ data.voting.description }}</p>
 <table>
     {% for i in data.results %}
     <tr>
