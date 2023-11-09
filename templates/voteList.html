@@ -11,7 +11,6 @@
 <body>
 
     <form method="get" enctype="multipart/form-data" class = 'search'>
-    {% csrf_token %}
     <input name="text" type="text" class="form-control" placeholder="Поиск"  value={{ data.src }}>
     <input type="submit" value="Найти" class="btn btn-primary">
     </form>
@@ -25,7 +24,7 @@
                 <form method = "post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <button type="submit" class = "del" name = 'del' value = {{ i.id }}>
-                        <img src="https://cdn-icons-png.flaticon.com/512/1483/1483063.png" alt="Delete" height = "20"/>
+                        <img src="https://cdn-icons-png.flaticon.com/512/1483/1483063.png" alt="Удалить" height = "20"/>
                     </button>
                     <!--input type="image" src="https://cdn-icons-png.flaticon.com/512/1483/1483063.png" border="0" alt="Delete" height = "20" class = "del"/-->
                     <!--<btn class = 'delet'><img src = "https://cdn-icons-png.flaticon.com/512/1483/1483063.png" height = "20" class = "del" alt = "Удалить"></btn>-->

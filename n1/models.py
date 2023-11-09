@@ -37,6 +37,7 @@ class Users(models.Model):
     mail = models.TextField()
     phone = models.TextField(blank=True, null=True)
     password = models.TextField()
+    moderator = models.BooleanField()
 
     class Meta:
         db_table = 'users'
@@ -45,11 +46,12 @@ class Users(models.Model):
 class VotingRes(models.Model):
     id = models.AutoField(db_column='ID', primary_key=True)  # Field name made lowercase.
     status = models.TextField(blank=True, null=True)
-    date_of_creation = models.DateField(db_column='date of creation', blank=True, null=True)  # Field renamed to remove unsuitable characters.
-    date_of_formation = models.DateField(db_column='date of formation', blank=True, null=True)  # Field renamed to remove unsuitable characters.
-    date_of_completion = models.DateField(db_column='date of completion', blank=True, null=True)  # Field renamed to remove unsuitable characters.
-    creator = models.TextField()
-    moderator = models.TextField()
+    creator = models.ForeignKey(Users, models.DO_NOTHING, db_column='creator', blank=True, null=True)
+    moderator = models.ForeignKey(Users, models.DO_NOTHING, db_column='moderator', related_name='votingres_moderator_set', blank=True, null=True)
+    date_of_creation = models.DateTimeField(db_column='date of creation', blank=True, null=True)  # Field renamed to remove unsuitable characters.
+    date_of_formation = models.DateTimeField(db_column='date of formation', blank=True, null=True)  # Field renamed to remove unsuitable characters.
+    date_of_completion = models.DateTimeField(db_column='date of completion', blank=True, null=True)  # Field renamed to remove unsuitable characters.
+
 
     class Meta:
-        db_table = 'voting res'
+            db_table = 'voting res'
