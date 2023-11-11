@@ -1,6 +1,6 @@
 from django.shortcuts import render
 import psycopg2
-from n1.models import NameOptions, Results
+from DAG_LAB.models import NameOptions, Results
 conn = psycopg2.connect(dbname="DAG", host="localhost", user="admin", password="admin", port="5432")
 cursor = conn.cursor()
 

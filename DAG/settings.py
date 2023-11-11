@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'n1.apps.N1Config',
+    'DAG_LAB.apps.N1Config',
 ]
 
 MIDDLEWARE = [
@@ -52,7 +52,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'DAG.urls'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR / "n1/static")]
+    os.path.join(BASE_DIR / "DAG_LAB/static")]
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -70,7 +70,7 @@ TEMPLATES = [
     },
 ]
 
-#WSGI_APPLICATION = 'DAG.wsgi.application'
+WSGI_APPLICATION = 'DAG.wsgi.application'
 
 
 # Database
