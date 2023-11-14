@@ -20,7 +20,14 @@ from DAG_LAB import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('vybory/', views.search),
-    #path('vybory/search', views.search, name='search'),
-    path('vybory/<int:id>/', views.getVoting),
+    path('vybory/', views.NameOptionsList.as_view()),
+    path('vybory/<int:id>/', views.NameOptionDetail.as_view()),
+    path('vybory/<int:id>/addToAppl/', views.addToAppl),
+    path('vybory/<int:id>/delFromAppl/', views.delFromAppl),
+    path('applications/', views.VotingResList.as_view()),
+    path('applications/<int:id>/', views.VotingResDetail.as_view()),
+    path('applications/<int:id>/form/', views.formAppl),
+    path('applications/<int:id>/delete/', views.delAppl),
+    path('applications/<int:id>/complete/', views.completeAppl),
+    path('applications/<int:id>/cancel/', views.cancelAppl),
 ]
