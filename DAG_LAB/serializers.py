@@ -23,3 +23,8 @@ class ApplservSerializer(serializers.ModelSerializer):
     class Meta:
         model = Applserv
         fields = ["nameOption", "votingRes"]
+
+class UsersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ["id", "name", "mail", "phone", "password", "moderator"]

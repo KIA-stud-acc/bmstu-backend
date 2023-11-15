@@ -26,8 +26,8 @@ urlpatterns = [
     path('vybory/<int:id>/delFromAppl/', views.delFromAppl),
     path('applications/', views.VotingResList.as_view()),
     path('applications/<int:id>/', views.VotingResDetail.as_view()),
-    path('applications/<int:id>/form/', views.formAppl),
-    path('applications/<int:id>/delete/', views.delAppl),
+    path('applications/form/', views.formAppl),
+    path('applications/delete/', views.delAppl),
     path('applications/<int:id>/complete/', views.completeAppl),
     path('applications/<int:id>/cancel/', views.cancelAppl),
 ]

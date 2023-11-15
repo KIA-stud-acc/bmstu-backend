@@ -38,10 +38,11 @@ class NameOptionsList(APIView):
     serializer_class = NameOptionsSerializer
 
     def get(self, request, format=None):
+        Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик").id
         sear = request.GET.get('text', "")
         NOList = self.model_class.objects.filter(status = "действует").filter(name__icontains=sear).order_by('name')
         serializer = self.serializer_class(NOList, many=True)
-        return Response(serializer.data)
+        return Response({"voting":serializer.data, "draftID": Appl})
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
@@ -121,6 +122,11 @@ class VotingResList(APIView):
         else:
             NOList = self.model_class.objects.filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).order_by('date_of_formation')
         serializer = self.serializer_class(NOList, many=True)
+        for i in serializer.data:
+            if i["creator"]:
+                i["creator"] = list(Users.objects.values("id","name","mail","phone").filter(id=i["creator"]))[0]
+            if i["moderator"]:
+                i["moderator"] = list(Users.objects.values("id", "name", "mail", "phone").filter(id=i["moderator"]))[0]
         return Response(serializer.data)
 
 class VotingResDetail(APIView):
@@ -128,31 +134,38 @@ class VotingResDetail(APIView):
     serializer_class = VotingResSerializer
     def get(self, request, id, format=None):
         Appl = self.model_class.objects.filter(id=id)[0]
-        ApplVot = Applserv.objects.filter(votingres=id)
-        Voting = NameOptions.objects.filter(id__in=[obj['nameoption'] for obj in list(ApplVot.values("nameoption"))])
+        ApplVot = Applserv.objects.filter(votingRes=id)
+        Voting = NameOptions.objects.filter(id__in=[obj['nameOption'] for obj in list(ApplVot.values("nameOption"))])
         serializer1 = self.serializer_class(Appl)
         serializer2 = NameOptionsSerializer(Voting, many=True)
-        return Response({"Application": serializer1.data, "Voting": serializer2.data})
+        res = {"Application": serializer1.data, "Voting": serializer2.data}
+        if res["Application"]["creator"]:
+            res["Application"]["creator"] = list(Users.objects.values("id", "name", "mail", "phone").filter(id=res["Application"]["creator"]))[0]
+        if res["Application"]["moderator"]:
+            res["Application"]["moderator"] = list(Users.objects.values("id", "name", "mail", "phone").filter(id=res["Application"]["moderator"]))[0]
+        return Response(res)
 
 @api_view(['Put'])
-def formAppl(request, id, format=None):
-    Appl = get_object_or_404(VotingRes, id=id)
-    if Appl.creator_id == get_creator() and Appl.status == "черновик":
-        Appl.status = "сформирован"
-        Appl.date_of_formation = datetime.datetime.now()
-        Appl.save()
-        ser = VotingResSerializer(Appl)
-        return Response(ser.data)
-    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+def formAppl(request, format=None):
+    Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+    Appl.status = "сформирован"
+    Appl.date_of_formation = datetime.datetime.now()
+    Appl.save()
+    ser = VotingResSerializer(Appl)
+    serializer = VotingResSerializer(data={"creator":get_creator()})
+    if serializer.is_valid():
+        serializer.save()
+    return Response(ser.data)
 
 @api_view(['DELETE'])
 def delAppl(request, id, format=None):
-    Appl = get_object_or_404(VotingRes, id=id)
-    if Appl.creator_id == get_creator() and Appl.status == "черновик":
-        Appl.status = "удалён"
-        Appl.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+    Appl.status = "удалён"
+    Appl.save()
+    serializer = VotingResSerializer(data={"creator": get_creator()})
+    if serializer.is_valid():
+        serializer.save()
+    return Response(status=status.HTTP_204_NO_CONTENT)
 @api_view(['Put'])
 def completeAppl(request, id, format=None):
     Appl = get_object_or_404(VotingRes, id=id)
@@ -177,23 +190,13 @@ def cancelAppl(request, id, format=None):
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 @api_view(['POST'])
 def addToAppl(request, id, format=None):
-    ApplId = request.data["id"]
-    if ApplId:
-        Appl = get_object_or_404(VotingRes, id=ApplId)
-        if Appl.creator_id == get_creator() and Appl.status == "черновик":
-            ser = ApplservSerializer(data={"votingRes":request.data["id"], "nameOption": id})
-            if ser.is_valid():
-                ser.save()
-            return Response(ser.data)
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    return Response(status=status.HTTP_400_BAD_REQUEST)
+    Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+    ser = ApplservSerializer(data={"votingRes":Appl.id, "nameOption": id})
+    if ser.is_valid():
+        ser.save()
+    return Response(ser.data)
 @api_view(['DELETE'])
 def delFromAppl(request, id, format=None):
-    ApplId = request.data["idAppl"]
-    if ApplId:
-        Appl = get_object_or_404(VotingRes, id=ApplId)
-        if Appl.creator_id == get_creator() and Appl.status == "черновик":
-            Applserv.objects.filter(nameOption = id).filter(votingRes=request.data["idAppl"]).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    return Response(status=status.HTTP_400_BAD_REQUEST)
+    Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+    Applserv.objects.filter(nameOption = id).filter(votingRes=Appl.id).delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
