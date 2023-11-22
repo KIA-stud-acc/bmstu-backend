@@ -158,7 +158,7 @@ def formAppl(request, format=None):
     return Response(ser.data)
 
 @api_view(['DELETE'])
-def delAppl(request, id, format=None):
+def delAppl(request, format=None):
     Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
     Appl.status = "удалён"
     Appl.save()
@@ -167,7 +167,7 @@ def delAppl(request, id, format=None):
         serializer.save()
     return Response(status=status.HTTP_204_NO_CONTENT)
 @api_view(['Put'])
-def completeAppl(request, id, format=None):
+def completeAppl(request, format=None):
     Appl = get_object_or_404(VotingRes, id=id)
     if list(Users.objects.filter(id=get_admin()).values())[0]['moderator'] is True and Appl.status == "сформирован":
         Appl.status = "завершён"
@@ -179,7 +179,7 @@ def completeAppl(request, id, format=None):
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @api_view(['DELETE'])
-def cancelAppl(request, id, format=None):
+def cancelAppl(request, format=None):
     Appl = get_object_or_404(VotingRes, id=id)
     if list(Users.objects.filter(id=get_admin()).values())[0]['moderator'] is True and Appl.status == "сформирован":
         Appl.status = "отклонён"
