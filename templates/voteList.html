@@ -18,7 +18,7 @@
     {% for i in data.voteList %}
         <div class = "card text-center" id = "{{ i.name }}">
             <img src = "{{ i.src }}" class="card-img-top" alt = "{{ i.name }}">
-            <h5 class="card-title">{{ i.name }}</h5>
+            <div class = "card-title"><h5 class = "card-title">{{ i.name }}</h5></div>
             <div class = "execBtn">
                 <a href="http://127.0.0.1:8000/vybory/{{ i.id }}" class="btn btn-outline-primary">Перейти на страницу голосования</a>
                 <form method = "post" enctype="multipart/form-data">

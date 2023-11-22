@@ -20,15 +20,12 @@
 
 .card{
     width: 15rem;
-    min-height: 20.5rem;
     box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.1);
     display: inline-block;
     flex-direction: column; /* Размещаем элементы в колонку */
     border-radius: 1rem;
     border: solid black 1px;
     margin-bottom: 0.5em;
-
-    position: absolute;
     top: 0;
     position: relative;
 }
@@ -43,8 +40,9 @@
 .card-title {
     display: block;
     font-size:1.2em;
-    height: 1rem;
+    min-height: 1rem;
     margin-top:0.1em;
+    padding-bottom: 0.1em;
     text-align:center;
 }
 .execBtn{
