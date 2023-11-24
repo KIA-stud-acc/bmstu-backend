@@ -1,4 +1,5 @@
 
+from decimal import Decimal
 import psycopg2
 from DAG_LAB.models import *
 from rest_framework.response import Response
@@ -190,10 +191,13 @@ def cancelAppl(request, format=None):
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 @api_view(['POST'])
 def addToAppl(request, id, format=None):
+    percent = request.data.get("percent", 0)
     Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
-    ser = ApplservSerializer(data={"votingRes":Appl.id, "nameOption": id})
+    ser = ApplservSerializer(data={"votingRes":Appl.id, "nameOption": id, "percentageofvotes": float(percent)})
     if ser.is_valid():
         ser.save()
+    else:
+        logging.debug(ser.is_valid())
     return Response(ser.data)
 @api_view(['DELETE'])
 def delFromAppl(request, id, format=None):

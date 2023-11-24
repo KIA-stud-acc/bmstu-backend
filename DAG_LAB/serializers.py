@@ -22,7 +22,7 @@ class VotingResSerializer(serializers.ModelSerializer):
 class ApplservSerializer(serializers.ModelSerializer):
     class Meta:
         model = Applserv
-        fields = ["nameOption", "votingRes"]
+        fields = ["nameOption", "votingRes", "percentageofvotes"]
 
 class UsersSerializer(serializers.ModelSerializer):
     class Meta:
