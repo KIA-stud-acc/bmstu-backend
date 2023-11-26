@@ -39,5 +39,5 @@ def search(request):
     return voteList(request, searchQuery)
 
 def getVoting(request, id):
-    return render(request, 'voting.html', {'data':{'voting':NameOptions.objects.filter(id = id)[0], 'results': Results.objects.filter(voting = id)}})
+    return render(request, 'voting.html', {'data':{'voting':NameOptions.objects.filter(id = id)[0]}})
 # Create your views here.
