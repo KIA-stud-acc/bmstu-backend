@@ -16,22 +16,13 @@ class Applserv(models.Model):
 class NameOptions(models.Model):
     id = models.AutoField(db_column='ID', primary_key=True)  # Field name made lowercase.
     name = models.TextField()
-    description = models.TextField(blank=True, null=True)
+    type = models.TextField(blank=True, null=True)
     status = models.TextField(default="действует")
     image_src = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = 'name options'
 
-
-class Results(models.Model):
-    id = models.AutoField(db_column='ID', primary_key=True)  # Field name made lowercase.
-    case = models.TextField(blank=True, null=True)
-    votes = models.BigIntegerField()
-    voting = models.ForeignKey(NameOptions, models.DO_NOTHING, db_column='voting')
-
-    class Meta:
-        db_table = 'results'
 
 
 class Users(models.Model):

@@ -59,8 +59,7 @@ class NameOptionDetail(APIView):
         NameOption = self.model_class.objects.filter(id=id)[0]
         Result = Results.objects.filter(voting=id)
         serializer1 = self.serializer_class(NameOption)
-        serializer2 = ResultsSerializer(Result, many=True)
-        return Response({"voting": serializer1.data, "results": serializer2.data})
+        return Response(serializer1.data)
     def delete(self, request, id, format=None):
         if str(id) + "/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
             for obj in [obj.object_name for obj in client.list_objects(bucket_name="images", prefix=str(id) + "/")]:
