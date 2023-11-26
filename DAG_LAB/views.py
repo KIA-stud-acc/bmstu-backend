@@ -72,7 +72,8 @@ class NameOptionDetail(APIView):
     def post(self, request, id, format=None):
         src = request.data.get("src", 0)
         name = request.data.get("name", str(id))
-        if src:
+        NameOption = get_object_or_404(self.model_class, id=id)
+        if src and NameOption:
             if str(id)+"/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
                 for obj in [obj.object_name for obj in client.list_objects(bucket_name="images", prefix = str(id)+"/")]:
                     client.remove_object(bucket_name="images", object_name=obj)
@@ -83,6 +84,8 @@ class NameOptionDetail(APIView):
                             data=img,
                             length=len(img1.read())
                               )
+            NameOption.image_src = f"http://localhost:9000/images/{id}/{id}.{src.split('.')[-1]}"
+            NameOption.save()
             return Response(status=status.HTTP_201_CREATED)
 
         return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -195,6 +198,7 @@ def addToAppl(request, id, format=None):
     Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
     ser = ApplservSerializer(data={"votingRes":Appl.id, "nameOption": id, "percentageofvotes": float(percent)})
     if ser.is_valid():
+        logging.debug(ser.validated_data)
         ser.save()
     else:
         logging.debug(ser.is_valid())

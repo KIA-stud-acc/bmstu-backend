@@ -4,7 +4,7 @@ from django.db import models
 class Applserv(models.Model):
     nameOption = models.ForeignKey('NameOptions', models.DO_NOTHING, db_column='nameOption')  # Field name made lowercase. The composite primary key (nameOption, votingRes) found, that is not supported. The first column is selected.
     votingRes = models.ForeignKey('VotingRes', models.DO_NOTHING, db_column='votingRes')  # Field name made lowercase.
-    id = models.AutoField(db_column='ID', primary_key=True)  # Field name made lowercase.
+    id = models.IntegerField(db_column='ID', primary_key=True)  # Field name made lowercase.
     percentageofvotes = models.FloatField(db_column='PercentageOfVotes', blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
@@ -18,6 +18,7 @@ class NameOptions(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True, null=True)
     status = models.TextField(default="действует")
+    image_src = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = 'name options'
