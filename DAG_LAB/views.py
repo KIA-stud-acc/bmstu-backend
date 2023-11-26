@@ -14,6 +14,9 @@ from django.conf import settings
 from urllib.request import urlopen
 from django.views.decorators.csrf import csrf_exempt
 import datetime
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
+import os
 
 
 fmt = getattr(settings, 'LOG_FORMAT', None)
@@ -39,7 +42,10 @@ class NameOptionsList(APIView):
     serializer_class = NameOptionsSerializer
 
     def get(self, request, format=None):
-        Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик").id
+        try:
+            Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик").id
+        except:
+            Appl = None
         sear = request.GET.get('text', "")
         NOList = self.model_class.objects.filter(status = "действует").filter(name__icontains=sear).order_by('name')
         serializer = self.serializer_class(NOList, many=True)
@@ -57,7 +63,6 @@ class NameOptionDetail(APIView):
     serializer_class = NameOptionsSerializer
     def get(self, request, id, format=None):
         NameOption = self.model_class.objects.filter(id=id)[0]
-        Result = Results.objects.filter(voting=id)
         serializer1 = self.serializer_class(NameOption)
         return Response(serializer1.data)
     def delete(self, request, id, format=None):
@@ -76,13 +81,25 @@ class NameOptionDetail(APIView):
             if str(id)+"/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
                 for obj in [obj.object_name for obj in client.list_objects(bucket_name="images", prefix = str(id)+"/")]:
                     client.remove_object(bucket_name="images", object_name=obj)
-            img = urlopen(src)
-            img1 = urlopen(src)
-            client.put_object(bucket_name='images',  # необходимо указать имя бакета,
-                            object_name=str(id)+"/"+name+"."+src.split(".")[-1],  # имя для нового файла в хранилище
-                            data=img,
-                            length=len(img1.read())
-                              )
+            val = URLValidator()
+            try:
+                val(src)
+                img = urlopen(src)
+                img1 = urlopen(src)
+                client.put_object(bucket_name='images',  # необходимо указать имя бакета,
+                                  object_name=str(id) + "/" + name + "." + src.split(".")[-1],
+                                  # имя для нового файла в хранилище
+                                  data=img,
+                                  length=len(img1.read())
+                                  )
+            except ValidationError as e:
+                if os.path.exists(src):
+                    client.fput_object(bucket_name='images',
+                                       object_name=str(id) + "/" + name + "." + src.split(".")[-1],
+                                       file_path=src)
+                else:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+
             NameOption.image_src = f"http://localhost:9000/images/{id}/{id}.{src.split('.')[-1]}"
             NameOption.save()
             return Response(status=status.HTTP_201_CREATED)
@@ -94,17 +111,7 @@ class NameOptionDetail(APIView):
         """
         NameOption = get_object_or_404(self.model_class, id=id)
         serializer = self.serializer_class(NameOption, data=request.data.get('voting'), partial=True)
-        if request.data.get('results', 0):
-            Results.objects.filter(voting=id).delete()
-            for obj in request.data.get('results'):
-                obj["voting"] = id
-                res_serializer = ResultsSerializer(data=obj)
-                if res_serializer.is_valid():
-                    res_serializer.save()
-                else:
-                    return Response(res_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            res_serializer = ResultsSerializer(Results.objects.filter(voting=id), many=True)
+
         if request.data.get('voting', 0):
             if serializer.is_valid():
                 serializer.save()
@@ -112,7 +119,7 @@ class NameOptionDetail(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = self.serializer_class(NameOption)
-        return Response({"voting": serializer.data, "results": res_serializer.data})
+        return Response(serializer.data)
 class VotingResList(APIView):
     model_class = VotingRes
     serializer_class = VotingResSerializer
@@ -142,11 +149,26 @@ class VotingResDetail(APIView):
         serializer1 = self.serializer_class(Appl)
         serializer2 = NameOptionsSerializer(Voting, many=True)
         res = {"Application": serializer1.data, "Voting": serializer2.data}
+        for vote in res["Voting"]:
+            vote["percentage"] = get_object_or_404(Applserv, nameOption=vote["id"], votingRes=id).percentageofvotes
         if res["Application"]["creator"]:
             res["Application"]["creator"] = list(Users.objects.values("id", "name", "mail", "phone").filter(id=res["Application"]["creator"]))[0]
         if res["Application"]["moderator"]:
             res["Application"]["moderator"] = list(Users.objects.values("id", "name", "mail", "phone").filter(id=res["Application"]["moderator"]))[0]
         return Response(res)
+    def put(self, request, id, format=None):
+        try:
+            Appl = get_object_or_404(VotingRes, id=id)
+        except:
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        desc = request.data.get("description", 0)
+        if desc and Appl:
+            logging.debug(desc)
+            Appl.description = desc
+            Appl.save()
+            ser = VotingResSerializer(Appl)
+            return Response(ser.data)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['Put'])
 def formAppl(request, format=None):
@@ -155,9 +177,6 @@ def formAppl(request, format=None):
     Appl.date_of_formation = datetime.datetime.now()
     Appl.save()
     ser = VotingResSerializer(Appl)
-    serializer = VotingResSerializer(data={"creator":get_creator()})
-    if serializer.is_valid():
-        serializer.save()
     return Response(ser.data)
 
 @api_view(['DELETE'])
@@ -165,15 +184,13 @@ def delAppl(request, format=None):
     Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
     Appl.status = "удалён"
     Appl.save()
-    serializer = VotingResSerializer(data={"creator": get_creator()})
-    if serializer.is_valid():
-        serializer.save()
     return Response(status=status.HTTP_204_NO_CONTENT)
 @api_view(['Put'])
-def completeAppl(request, format=None):
+def chstatusAppl(request, id, format=None):
     Appl = get_object_or_404(VotingRes, id=id)
-    if list(Users.objects.filter(id=get_admin()).values())[0]['moderator'] is True and Appl.status == "сформирован":
-        Appl.status = "завершён"
+    stat = request.GET.get("status", 0)
+    if list(Users.objects.filter(id=get_admin()).values())[0]['moderator'] is True and Appl.status == "сформирован" and stat:
+        Appl.status = stat
         Appl.moderator_id = get_admin()
         Appl.date_of_completion = datetime.datetime.now()
         Appl.save()
@@ -181,20 +198,18 @@ def completeAppl(request, format=None):
         return Response(ser.data)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-@api_view(['DELETE'])
-def cancelAppl(request, format=None):
-    Appl = get_object_or_404(VotingRes, id=id)
-    if list(Users.objects.filter(id=get_admin()).values())[0]['moderator'] is True and Appl.status == "сформирован":
-        Appl.status = "отклонён"
-        Appl.moderator_id = get_admin()
-        Appl.date_of_completion = datetime.datetime.now()
-        Appl.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 @api_view(['POST'])
 def addToAppl(request, id, format=None):
     percent = request.data.get("percent", 0)
-    Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+    try:
+        Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+        logging.debug(Appl)
+    except:
+        serializer = VotingResSerializer(data={"creator": get_creator()})
+        if serializer.is_valid():
+            serializer.save()
+        Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+        logging.debug(Appl)
     ser = ApplservSerializer(data={"votingRes":Appl.id, "nameOption": id, "percentageofvotes": float(percent)})
     if ser.is_valid():
         logging.debug(ser.validated_data)
@@ -207,3 +222,17 @@ def delFromAppl(request, id, format=None):
     Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
     Applserv.objects.filter(nameOption = id).filter(votingRes=Appl.id).delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['Put'])
+def chMM(request, idAppl, idServ, format=None):
+    try:
+        applserv = get_object_or_404(Applserv, nameOption=idServ, votingRes=idAppl)
+    except:
+       return Response(status=status.HTTP_404_NOT_FOUND)
+    percent = request.data.get("percent", 0)
+    if percent:
+        applserv.percentageofvotes = percent
+        applserv.save()
+        ser = ApplservSerializer(applserv)
+        return Response(ser.data)
+    Response(status=status.HTTP_400_BAD_REQUEST)

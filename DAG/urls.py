@@ -28,6 +28,7 @@ urlpatterns = [
     path('applications/<int:id>/', views.VotingResDetail.as_view()),
     path('applications/form/', views.formAppl),
     path('applications/delete/', views.delAppl),
-    path('applications/<int:id>/complete/', views.completeAppl),
-    path('applications/<int:id>/cancel/', views.cancelAppl),
+    path('applications/<int:id>/chstatus/', views.chstatusAppl),
+    path('applications/<int:idAppl>/<int:idServ>/', views.chMM),
+    #path('applications/<int:id>/cancel/', views.cancelAppl),
 ]

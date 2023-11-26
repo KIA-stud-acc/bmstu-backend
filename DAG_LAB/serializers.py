@@ -7,13 +7,13 @@ class NameOptionsSerializer(serializers.ModelSerializer):
         # Модель, которую мы сериализуем
         model = NameOptions
         # Поля, которые мы сериализуем
-        fields = ["id", "name", "type", "status"]
+        fields = ["id", "name", "type", "status", "image_src"]
 
 
 class VotingResSerializer(serializers.ModelSerializer):
     class Meta:
         model = VotingRes
-        fields = ["id", "status", "creator", "moderator", "date_of_creation", "date_of_formation", "date_of_completion"]
+        fields = ["id", "status", "creator", "moderator", "date_of_creation", "date_of_formation", "date_of_completion", "description"]
 
 class ApplservSerializer(serializers.ModelSerializer):
     class Meta:
