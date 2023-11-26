@@ -7,18 +7,11 @@
     <title>Voting</title>
 </head>
 <body>
-<h>{{ data.voting.name }}</h>
+<h2>{{ data.voting.name }}</h2>
 <br><hr><br>
-<img src = '{{ data.voting.src }}'>
+<img src = '{{ data.voting.image_src }}'>
 <br>
-<p>{{ data.voting.description }}</p>
-<table>
-    {% for i in data.results %}
-    <tr>
-        <td>{{ i.case }}</td>
-        <td>{{ i.votes }}</td>
-    </tr>
-    {% endfor %}
-</table>
+<p style="font-size: 1.5em;">{{ data.voting.type }}</p>
+
 </body>
 </html>
