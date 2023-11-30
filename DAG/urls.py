@@ -23,12 +23,10 @@ urlpatterns = [
     path('vybory/', views.NameOptionsList.as_view()),
     path('vybory/<int:id>/', views.NameOptionDetail.as_view()),
     path('vybory/<int:id>/addToAppl/', views.addToAppl),
-    path('vybory/<int:id>/delFromAppl/', views.delFromAppl),
     path('applications/', views.VotingResList.as_view()),
     path('applications/<int:id>/', views.VotingResDetail.as_view()),
     path('applications/form/', views.formAppl),
     path('applications/delete/', views.delAppl),
     path('applications/<int:id>/chstatus/', views.chstatusAppl),
-    path('applications/<int:idAppl>/<int:idServ>/', views.chMM),
-    #path('applications/<int:id>/cancel/', views.cancelAppl),
+    path('applications/<int:idAppl>/<int:idServ>/', views.MM.as_view()),
 ]

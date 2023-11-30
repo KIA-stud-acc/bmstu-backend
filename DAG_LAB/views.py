@@ -100,7 +100,7 @@ class NameOptionDetail(APIView):
                 else:
                     return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            NameOption.image_src = f"http://localhost:9000/images/{id}/{id}.{src.split('.')[-1]}"
+            NameOption.image_src = f"http://localhost:9000/images/{id}/{name}.{src.split('.')[-1]}"
             NameOption.save()
             return Response(status=status.HTTP_201_CREATED)
 
@@ -110,15 +110,12 @@ class NameOptionDetail(APIView):
         Обновляет информацию о голосовании (для модератора)
         """
         NameOption = get_object_or_404(self.model_class, id=id)
-        serializer = self.serializer_class(NameOption, data=request.data.get('voting'), partial=True)
+        serializer = self.serializer_class(NameOption, data=request.data, partial=True)
 
-        if request.data.get('voting', 0):
-            if serializer.is_valid():
-                serializer.save()
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if serializer.is_valid():
+            serializer.save()
         else:
-            serializer = self.serializer_class(NameOption)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.data)
 class VotingResList(APIView):
     model_class = VotingRes
@@ -143,7 +140,10 @@ class VotingResDetail(APIView):
     model_class = VotingRes
     serializer_class = VotingResSerializer
     def get(self, request, id, format=None):
-        Appl = self.model_class.objects.filter(id=id)[0]
+        try:
+            Appl = self.model_class.objects.filter(id=id)[0]
+        except IndexError:
+            return Response(status=status.HTTP_404_NOT_FOUND)
         ApplVot = Applserv.objects.filter(votingRes=id)
         Voting = NameOptions.objects.filter(id__in=[obj['nameOption'] for obj in list(ApplVot.values("nameOption"))])
         serializer1 = self.serializer_class(Appl)
@@ -172,7 +172,10 @@ class VotingResDetail(APIView):
 
 @api_view(['Put'])
 def formAppl(request, format=None):
-    Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+    try:
+        Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
     Appl.status = "сформирован"
     Appl.date_of_formation = datetime.datetime.now()
     Appl.save()
@@ -181,13 +184,19 @@ def formAppl(request, format=None):
 
 @api_view(['DELETE'])
 def delAppl(request, format=None):
-    Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+    try:
+        Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
     Appl.status = "удалён"
     Appl.save()
     return Response(status=status.HTTP_204_NO_CONTENT)
 @api_view(['Put'])
 def chstatusAppl(request, id, format=None):
-    Appl = get_object_or_404(VotingRes, id=id)
+    try:
+        Appl = get_object_or_404(VotingRes, id=id)
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
     stat = request.GET.get("status", 0)
     if list(Users.objects.filter(id=get_admin()).values())[0]['moderator'] is True and Appl.status == "сформирован" and stat:
         Appl.status = stat
@@ -217,22 +226,26 @@ def addToAppl(request, id, format=None):
     else:
         logging.debug(ser.is_valid())
     return Response(ser.data)
-@api_view(['DELETE'])
-def delFromAppl(request, id, format=None):
-    Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
-    Applserv.objects.filter(nameOption = id).filter(votingRes=Appl.id).delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['Put'])
-def chMM(request, idAppl, idServ, format=None):
-    try:
-        applserv = get_object_or_404(Applserv, nameOption=idServ, votingRes=idAppl)
-    except:
-       return Response(status=status.HTTP_404_NOT_FOUND)
-    percent = request.data.get("percent", 0)
-    if percent:
-        applserv.percentageofvotes = percent
-        applserv.save()
-        ser = ApplservSerializer(applserv)
-        return Response(ser.data)
-    Response(status=status.HTTP_400_BAD_REQUEST)
+class MM(APIView):
+
+    def delete(self, request, idAppl, idServ, format=None):
+        try:
+            applserv = get_object_or_404(Applserv, nameOption=idServ, votingRes=idAppl)
+            applserv.delete()
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def put(self, request, idAppl, idServ, format=None):
+        try:
+            applserv = get_object_or_404(Applserv, nameOption=idServ, votingRes=idAppl)
+        except:
+           return Response(status=status.HTTP_404_NOT_FOUND)
+        percent = request.data.get("percent", 0)
+        if percent:
+            applserv.percentageofvotes = percent
+            applserv.save()
+            ser = ApplservSerializer(applserv)
+            return Response(ser.data)
+        Response(status=status.HTTP_400_BAD_REQUEST)
