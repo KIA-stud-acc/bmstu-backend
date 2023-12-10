@@ -1,5 +1,4 @@
 
-from decimal import Decimal
 import psycopg2
 from DAG_LAB.models import *
 from rest_framework.response import Response
@@ -12,11 +11,9 @@ from minio import Minio
 import logging
 from django.conf import settings
 from urllib.request import urlopen
-from django.views.decorators.csrf import csrf_exempt
 import datetime
 from django.core.validators import URLValidator
-from django.core.exceptions import ValidationError
-import os
+from pathlib import Path
 
 
 fmt = getattr(settings, 'LOG_FORMAT', None)
@@ -70,6 +67,7 @@ class NameOptionDetail(APIView):
             for obj in [obj.object_name for obj in client.list_objects(bucket_name="images", prefix=str(id) + "/")]:
                 client.remove_object(bucket_name="images", object_name=obj)
         NameOption = get_object_or_404(self.model_class, id=id)
+        NameOption.image_src = None
         NameOption.status = "удалён"
         NameOption.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -77,30 +75,37 @@ class NameOptionDetail(APIView):
         src = request.data.get("src", 0)
         name = request.data.get("name", str(id))
         NameOption = get_object_or_404(self.model_class, id=id)
+        file = request.FILES['image']
         if src and NameOption:
             if str(id)+"/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
                 for obj in [obj.object_name for obj in client.list_objects(bucket_name="images", prefix = str(id)+"/")]:
                     client.remove_object(bucket_name="images", object_name=obj)
             val = URLValidator()
-            try:
-                val(src)
-                img = urlopen(src)
-                img1 = urlopen(src)
-                client.put_object(bucket_name='images',  # необходимо указать имя бакета,
-                                  object_name=str(id) + "/" + name + "." + src.split(".")[-1],
-                                  # имя для нового файла в хранилище
-                                  data=img,
-                                  length=len(img1.read())
-                                  )
-            except ValidationError as e:
-                if os.path.exists(src):
-                    client.fput_object(bucket_name='images',
-                                       object_name=str(id) + "/" + name + "." + src.split(".")[-1],
-                                       file_path=src)
-                else:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
 
+            val(src)
+            img = urlopen(src)
+            img1 = urlopen(src)
+            client.put_object(bucket_name='images',  # необходимо указать имя бакета,
+                              object_name=str(id) + "/" + name + "." + src.split(".")[-1],
+                              # имя для нового файла в хранилище
+                              data=img,
+                              length=len(img1.read())
+                              )
             NameOption.image_src = f"http://localhost:9000/images/{id}/{name}.{src.split('.')[-1]}"
+            NameOption.save()
+            return Response(status=status.HTTP_201_CREATED)
+        elif file and NameOption:
+            if str(id) + "/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
+                for obj in [obj.object_name for obj in client.list_objects(bucket_name="images", prefix=str(id) + "/")]:
+                    client.remove_object(bucket_name="images", object_name=obj)
+            client.put_object(bucket_name='images',  # необходимо указать имя бакета,
+                              object_name=str(id) + "/" + name + Path(file.name).suffix,
+                              # имя для нового файла в хранилище
+                              data=file,
+                              length=len(file)
+                              )
+
+            NameOption.image_src = f"http://localhost:9000/images/{id}/{name}{Path(file.name).suffix}"
             NameOption.save()
             return Response(status=status.HTTP_201_CREATED)
 
@@ -198,7 +203,7 @@ def chstatusAppl(request, id, format=None):
     except:
         return Response(status=status.HTTP_404_NOT_FOUND)
     stat = request.GET.get("status", 0)
-    if list(Users.objects.filter(id=get_admin()).values())[0]['moderator'] is True and Appl.status == "сформирован" and stat:
+    if list(Users.objects.filter(id=get_admin()).values())[0]['moderator'] is True and Appl.status == "сформирован" and stat in ["отклонён", "завершён"]:
         Appl.status = stat
         Appl.moderator_id = get_admin()
         Appl.date_of_completion = datetime.datetime.now()
