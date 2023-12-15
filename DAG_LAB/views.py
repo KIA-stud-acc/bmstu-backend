@@ -14,7 +14,7 @@ from urllib.request import urlopen
 import datetime
 from django.core.validators import URLValidator
 from pathlib import Path
-
+import socket
 
 fmt = getattr(settings, 'LOG_FORMAT', None)
 lvl = getattr(settings, 'LOG_LEVEL', logging.DEBUG)
@@ -46,6 +46,9 @@ class NameOptionsList(APIView):
         sear = request.GET.get('text', "")
         NOList = self.model_class.objects.filter(status = "действует").filter(name__icontains=sear).order_by('name')
         serializer = self.serializer_class(NOList, many=True)
+        for i in serializer.data:
+            i["image_src"] = i["image_src"].replace("127.0.0.1",socket.gethostbyname(socket.gethostname()))
+            i["image_src"] = i["image_src"].replace("localhost", socket.gethostbyname(socket.gethostname()))
         return Response({"voting":serializer.data, "draftID": Appl})
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
@@ -61,7 +64,10 @@ class NameOptionDetail(APIView):
     def get(self, request, id, format=None):
         NameOption = self.model_class.objects.filter(id=id)[0]
         serializer1 = self.serializer_class(NameOption)
-        return Response(serializer1.data)
+        i = serializer1.data
+        i["image_src"] = i["image_src"].replace("127.0.0.1", socket.gethostbyname(socket.gethostname()))
+        i["image_src"] = i["image_src"].replace("localhost", socket.gethostbyname(socket.gethostname()))
+        return Response(i)
     def delete(self, request, id, format=None):
         if str(id) + "/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
             for obj in [obj.object_name for obj in client.list_objects(bucket_name="images", prefix=str(id) + "/")]:
