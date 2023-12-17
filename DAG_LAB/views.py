@@ -47,8 +47,8 @@ class NameOptionsList(APIView):
         NOList = self.model_class.objects.filter(status = "действует").filter(name__icontains=sear).order_by('name')
         serializer = self.serializer_class(NOList, many=True)
         for i in serializer.data:
-            i["image_src"] = i["image_src"].replace("127.0.0.1",socket.gethostbyname(socket.gethostname()))
-            i["image_src"] = i["image_src"].replace("localhost", socket.gethostbyname(socket.gethostname()))
+            i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
+            i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
         return Response({"voting":serializer.data, "draftID": Appl})
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
