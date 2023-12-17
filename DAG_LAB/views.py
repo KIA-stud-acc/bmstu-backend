@@ -50,6 +50,7 @@ class NameOptionsList(APIView):
             i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
             i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
         return Response({"voting":serializer.data, "draftID": Appl})
+
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
@@ -116,6 +117,7 @@ class NameOptionDetail(APIView):
             return Response(status=status.HTTP_201_CREATED)
 
         return Response(status=status.HTTP_400_BAD_REQUEST)
+
     def put(self, request, id, format=None):
         """
         Обновляет информацию о голосовании (для модератора)
