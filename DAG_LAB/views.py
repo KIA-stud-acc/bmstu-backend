@@ -65,8 +65,8 @@ class NameOptionDetail(APIView):
         NameOption = self.model_class.objects.filter(id=id)[0]
         serializer1 = self.serializer_class(NameOption)
         i = serializer1.data
-        i["image_src"] = i["image_src"].replace("127.0.0.1", socket.gethostbyname(socket.gethostname()))
-        i["image_src"] = i["image_src"].replace("localhost", socket.gethostbyname(socket.gethostname()))
+        i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
+        i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
         return Response(i)
     def delete(self, request, id, format=None):
         if str(id) + "/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
