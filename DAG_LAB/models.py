@@ -1,4 +1,16 @@
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin, UserManager
 from django.db import models
+import logging
+from django.conf import settings
+
+fmt = getattr(settings, 'LOG_FORMAT', None)
+lvl = getattr(settings, 'LOG_LEVEL', logging.DEBUG)
+
+logging.basicConfig(format=fmt, level=lvl)
+logging.debug("Logging started on %s for %s" % (logging.root.name, logging.getLevelName(lvl)))
+
+
 
 # Create your models here.
 class Applserv(models.Model):
@@ -21,33 +33,34 @@ class NameOptions(models.Model):
     image_src = models.TextField(blank=True, null=True)
 
     class Meta:
+        managed = False
         db_table = 'name options'
 
 
 
-class Users(models.Model):
-    id = models.AutoField(db_column='ID', primary_key=True)  # Field name made lowercase.
-    name = models.TextField(unique=True)
-    mail = models.TextField()
+class User(AbstractBaseUser, PermissionsMixin): # Field name made lowercase.
+    username = models.TextField(db_column='name', unique=True)
+    email = models.EmailField(("email адрес"), unique=True)
     phone = models.TextField(blank=True, null=True)
-    password = models.TextField()
-    moderator = models.BooleanField()
-
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+    USERNAME_FIELD = 'username'
+    objects = UserManager()
     class Meta:
-        db_table = 'users'
+        db_table = 'User'
 
 
 class VotingRes(models.Model):
     id = models.AutoField(db_column='ID', primary_key=True)  # Field name made lowercase.
     status = models.TextField(default="черновик", blank=True, null=True)
-    creator = models.ForeignKey(Users, models.DO_NOTHING, db_column='creator', blank=True, null=True)
-    moderator = models.ForeignKey(Users, models.DO_NOTHING, db_column='moderator', related_name='votingres_moderator_set', blank=True, null=True)
+    creator = models.ForeignKey(User, models.DO_NOTHING, db_column='creator', blank=True, null=True)
+    moderator = models.ForeignKey(User, models.DO_NOTHING, db_column='moderator', related_name='votingres_moderator_set', blank=True, null=True)
     date_of_creation = models.DateTimeField(auto_now=True, db_column='date of creation', blank=True, null=True)  # Field renamed to remove unsuitable characters.
     date_of_formation = models.DateTimeField(db_column='date of formation', blank=True, null=True)  # Field renamed to remove unsuitable characters.
     date_of_completion = models.DateTimeField(db_column='date of completion', blank=True, null=True)  # Field renamed to remove unsuitable characters.
     description = models.TextField(blank=True, null=True)
-    #Voting = models.ManyToManyField(NameOptions, through="Applserv")
 
 
     class Meta:
-            db_table = 'voting res'
+        managed = False
+        db_table = 'voting res'

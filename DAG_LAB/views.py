@@ -3,10 +3,10 @@ import psycopg2
 from DAG_LAB.models import *
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from rest_framework import status
+from rest_framework import status, viewsets
 from DAG_LAB.serializers import *
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from minio import Minio
 import logging
 from django.conf import settings
@@ -15,6 +15,13 @@ import datetime
 from django.core.validators import URLValidator
 from pathlib import Path
 import socket
+from drf_yasg.utils import swagger_auto_schema
+from django.contrib.auth import authenticate, login, logout
+from django.http import HttpResponse
+from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAuthenticated
+from django.views.decorators.csrf import csrf_exempt
+from DAG_LAB.permissions import IsManager
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
 fmt = getattr(settings, 'LOG_FORMAT', None)
 lvl = getattr(settings, 'LOG_LEVEL', logging.DEBUG)
@@ -34,6 +41,17 @@ def get_creator():
 def get_admin():
     return 2
 
+def method_permission_classes(classes):
+    def decorator(func):
+        def decorated_func(self, *args, **kwargs):
+            self.permission_classes = classes
+            self.check_permissions(self.request)
+            return func(self, *args, **kwargs)
+        return decorated_func
+    return decorator
+
+
+
 class NameOptionsList(APIView):
     model_class = NameOptions
     serializer_class = NameOptionsSerializer
@@ -50,6 +68,9 @@ class NameOptionsList(APIView):
             i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
             i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
         return Response({"voting":serializer.data, "draftID": Appl})
+
+    @method_permission_classes((IsManager,))
+    @swagger_auto_schema(request_body=NameOptionsSerializer)
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
@@ -68,6 +89,8 @@ class NameOptionDetail(APIView):
         i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
         i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
         return Response(i)
+
+    @method_permission_classes((IsManager,))
     def delete(self, request, id, format=None):
         if str(id) + "/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
             for obj in [obj.object_name for obj in client.list_objects(bucket_name="images", prefix=str(id) + "/")]:
@@ -77,6 +100,8 @@ class NameOptionDetail(APIView):
         NameOption.status = "удалён"
         NameOption.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @method_permission_classes((IsManager,))
     def post(self, request, id, format=None):
         src = request.data.get("src", 0)
         name = request.data.get("name", str(id))
@@ -116,6 +141,9 @@ class NameOptionDetail(APIView):
             return Response(status=status.HTTP_201_CREATED)
 
         return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    @method_permission_classes((IsManager,))
+    @swagger_auto_schema(request_body=NameOptionsSerializer)
     def put(self, request, id, format=None):
         """
         Обновляет информацию о голосовании (для модератора)
@@ -131,6 +159,9 @@ class NameOptionDetail(APIView):
 class VotingResList(APIView):
     model_class = VotingRes
     serializer_class = VotingResSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [BasicAuthentication, SessionAuthentication]
+
     def get(self, request, format=None):
         status = request.GET.get('status', "")
         dateFrom = request.GET.get('dateFrom', "0001-01-01")
@@ -142,14 +173,15 @@ class VotingResList(APIView):
         serializer = self.serializer_class(NOList, many=True)
         for i in serializer.data:
             if i["creator"]:
-                i["creator"] = list(Users.objects.values("id","name","mail","phone").filter(id=i["creator"]))[0]
+                i["creator"] = list(User.objects.values("id","username","email","phone").filter(id=7))[0]
             if i["moderator"]:
-                i["moderator"] = list(Users.objects.values("id", "name", "mail", "phone").filter(id=i["moderator"]))[0]
+                i["moderator"] = list(User.objects.values("id", "username", "email", "phone").filter(id=7))[0]
         return Response(serializer.data)
 
 class VotingResDetail(APIView):
     model_class = VotingRes
     serializer_class = VotingResSerializer
+    permission_classes = [IsAuthenticated]
     def get(self, request, id, format=None):
         try:
             Appl = self.model_class.objects.filter(id=id)[0]
@@ -163,9 +195,9 @@ class VotingResDetail(APIView):
         for vote in res["Voting"]:
             vote["percentage"] = get_object_or_404(Applserv, nameOption=vote["id"], votingRes=id).percentageofvotes
         if res["Application"]["creator"]:
-            res["Application"]["creator"] = list(Users.objects.values("id", "name", "mail", "phone").filter(id=res["Application"]["creator"]))[0]
+            res["Application"]["creator"] = list(User.objects.values("id", "username", "mail", "phone").filter(id=res["Application"]["creator"]))[0]
         if res["Application"]["moderator"]:
-            res["Application"]["moderator"] = list(Users.objects.values("id", "name", "mail", "phone").filter(id=res["Application"]["moderator"]))[0]
+            res["Application"]["moderator"] = list(User.objects.values("id", "username", "mail", "phone").filter(id=res["Application"]["moderator"]))[0]
         return Response(res)
     def put(self, request, id, format=None):
         try:
@@ -181,6 +213,7 @@ class VotingResDetail(APIView):
             return Response(ser.data)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+
 @api_view(['Put'])
 def formAppl(request, format=None):
     try:
@@ -193,6 +226,7 @@ def formAppl(request, format=None):
     ser = VotingResSerializer(Appl)
     return Response(ser.data)
 
+
 @api_view(['DELETE'])
 def delAppl(request, format=None):
     try:
@@ -202,6 +236,9 @@ def delAppl(request, format=None):
     Appl.status = "удалён"
     Appl.save()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@permission_classes([IsManager])
 @api_view(['Put'])
 def chstatusAppl(request, id, format=None):
     try:
@@ -209,7 +246,7 @@ def chstatusAppl(request, id, format=None):
     except:
         return Response(status=status.HTTP_404_NOT_FOUND)
     stat = request.GET.get("status", 0)
-    if list(Users.objects.filter(id=get_admin()).values())[0]['moderator'] is True and Appl.status == "сформирован" and stat in ["отклонён", "завершён"]:
+    if Appl.status == "сформирован" and stat in ["отклонён", "завершён"]:  #list(Users.objects.filter(id=get_admin()).values())[0]['is_staff'] is True and
         Appl.status = stat
         Appl.moderator_id = get_admin()
         Appl.date_of_completion = datetime.datetime.now()
@@ -217,6 +254,7 @@ def chstatusAppl(request, id, format=None):
         ser = VotingResSerializer(Appl)
         return Response(ser.data)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 @api_view(['POST'])
 def addToAppl(request, id, format=None):
@@ -237,6 +275,7 @@ def addToAppl(request, id, format=None):
     else:
         logging.debug(ser.is_valid())
     return Response(ser.data)
+
 
 class MM(APIView):
 
@@ -260,3 +299,50 @@ class MM(APIView):
             ser = ApplservSerializer(applserv)
             return Response(ser.data)
         Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    queryset = User.objects.all()
+    serializer_class = UsersSerializer
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            self.object = serializer.save()
+            self.object.set_password(self.object.password)
+            self.object.save()
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED,
+                            headers=headers)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_permissions(self):
+        if self.action in ['create']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsManager]
+        return [permission() for permission in permission_classes]
+
+
+@permission_classes([AllowAny])
+@authentication_classes([])
+@csrf_exempt
+@swagger_auto_schema(method='post', request_body=UsersSerializer)
+@api_view(['Post'])
+def login_view(request):
+    logging.debug(1)
+    username = request.POST["username"] # допустим передали username и password
+    password = request.POST["password"]
+    user = authenticate(request, username=username, password=password)
+    if user is not None:
+        login(request, user)
+        return HttpResponse("{'status': 'ok'}")
+    else:
+        return HttpResponse("{'status': 'error', 'error': 'login failed'}")
+
+def logout_view(request):
+    logout(request._request)
+    return Response({'status': 'Success'})
