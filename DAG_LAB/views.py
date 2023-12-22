@@ -22,6 +22,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAu
 from django.views.decorators.csrf import csrf_exempt
 from DAG_LAB.permissions import IsManager
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+import redis
+import uuid
 
 fmt = getattr(settings, 'LOG_FORMAT', None)
 lvl = getattr(settings, 'LOG_LEVEL', logging.DEBUG)
@@ -33,6 +35,10 @@ client = Minio(endpoint="localhost:9000",   # адрес сервера
                access_key='ADMIN',          # логин админа
                secret_key='O5JZoWWq6tYE7XCTWJwGXEZGiUSAWU7e9yALGd2v',       # пароль админа
                secure=False)                # опциональный параметр, отвечающий за вкл/выкл защищенное TLS соединение
+
+session_storage = redis.StrictRedis(host=settings.REDIS_HOST,
+                                    port=settings.REDIS_PORT)
+
 
 conn = psycopg2.connect(dbname="DAG", host="localhost", user="admin", password="admin", port="5432")
 cursor = conn.cursor()
@@ -159,15 +165,19 @@ class NameOptionDetail(APIView):
 class VotingResList(APIView):
     model_class = VotingRes
     serializer_class = VotingResSerializer
-    permission_classes = [IsAuthenticated]
     authentication_classes = [BasicAuthentication, SessionAuthentication]
+    permission_classes = [AllowAny]
 
     def get(self, request, format=None):
-        status = request.GET.get('status', "")
+        ssid = request.COOKIES.get("session_id", -1)
+        if not session_storage.get(ssid):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        stat = request.GET.get('status', "")
         dateFrom = request.GET.get('dateFrom', "0001-01-01")
         dateTo = request.GET.get('dateTo', "9999-12-01")
-        if status:
-            NOList = self.model_class.objects.filter(status=status).filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).order_by('date_of_formation')
+        if stat:
+            NOList = self.model_class.objects.filter(status=stat).filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).order_by('date_of_formation')
         else:
             NOList = self.model_class.objects.filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).order_by('date_of_formation')
         serializer = self.serializer_class(NOList, many=True)
@@ -329,17 +339,21 @@ class UserViewSet(viewsets.ModelViewSet):
 
 @permission_classes([AllowAny])
 @authentication_classes([])
-@csrf_exempt
+# @csrf_exempt
 @swagger_auto_schema(method='post', request_body=UsersSerializer)
 @api_view(['Post'])
 def login_view(request):
-    logging.debug(1)
-    username = request.POST["username"] # допустим передали username и password
-    password = request.POST["password"]
+    username = request.data.get("username") # допустим передали username и password
+    password = request.data.get("password")
     user = authenticate(request, username=username, password=password)
     if user is not None:
-        login(request, user)
-        return HttpResponse("{'status': 'ok'}")
+        random_key = uuid.uuid4()
+        session_storage.set(str(random_key), username)
+
+        response = HttpResponse("{'status': 'ok'}")
+        response.set_cookie("session_id", random_key)
+
+        return response
     else:
         return HttpResponse("{'status': 'error', 'error': 'login failed'}")
 

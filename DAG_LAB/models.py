@@ -41,10 +41,10 @@ class NameOptions(models.Model):
 class User(AbstractBaseUser, PermissionsMixin): # Field name made lowercase.
     username = models.TextField(db_column='name', unique=True)
     email = models.EmailField(("email адрес"), unique=True)
-    phone = models.TextField(blank=True, null=True)
+    phone = models.TextField(blank=True, null=True, unique=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
-    USERNAME_FIELD = 'username'
+    USERNAME_FIELD = 'email'
     objects = UserManager()
     class Meta:
         db_table = 'User'
