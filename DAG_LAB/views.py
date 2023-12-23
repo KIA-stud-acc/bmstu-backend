@@ -170,22 +170,36 @@ class VotingResList(APIView):
 
     def get(self, request, format=None):
         ssid = request.COOKIES.get("session_id", -1)
-        if not session_storage.get(ssid):
+        username = session_storage.get(ssid)
+        if not username:
             return Response(status=status.HTTP_403_FORBIDDEN)
-
-        stat = request.GET.get('status', "")
-        dateFrom = request.GET.get('dateFrom', "0001-01-01")
-        dateTo = request.GET.get('dateTo', "9999-12-01")
-        if stat:
-            NOList = self.model_class.objects.filter(status=stat).filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).order_by('date_of_formation')
         else:
-            NOList = self.model_class.objects.filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).order_by('date_of_formation')
-        serializer = self.serializer_class(NOList, many=True)
-        for i in serializer.data:
-            if i["creator"]:
-                i["creator"] = list(User.objects.values("id","username","email","phone").filter(id=7))[0]
-            if i["moderator"]:
-                i["moderator"] = list(User.objects.values("id", "username", "email", "phone").filter(id=7))[0]
+            user = get_object_or_404(User,username=username.decode('utf-8'))
+            stat = request.GET.get('status', "")
+            dateFrom = request.GET.get('dateFrom', "0001-01-01")
+            dateTo = request.GET.get('dateTo', "9999-12-01")
+            if user.is_staff:
+                if stat:
+                    NOList = self.model_class.objects.filter(status=stat).filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).order_by('date_of_formation')
+                else:
+                    NOList = self.model_class.objects.filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).order_by('date_of_formation')
+                serializer = self.serializer_class(NOList, many=True)
+                for i in serializer.data:
+                    if i["creator"]:
+                        i["creator"] = list(User.objects.values("id","username","email","phone").filter(id=i["creator"]))[0]
+                    if i["moderator"]:
+                        i["moderator"] = list(User.objects.values("id", "username", "email", "phone").filter(id=i["moderator"]))[0]
+            else:
+                if stat:
+                    NOList = self.model_class.objects.filter(status=stat).filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).filter(creator=user.id).order_by('date_of_formation')
+                else:
+                    NOList = self.model_class.objects.filter(date_of_formation__date__gte=dateFrom).filter(date_of_formation__date__lte=dateTo).filter(creator=user.id).order_by('date_of_formation')
+                serializer = self.serializer_class(NOList, many=True)
+                for i in serializer.data:
+                    if i["creator"]:
+                        i["creator"] = list(User.objects.values("id","username","email","phone").filter(id=i["creator"]))[0]
+                    if i["moderator"]:
+                        i["moderator"] = list(User.objects.values("id", "username", "email", "phone").filter(id=i["moderator"]))[0]
         return Response(serializer.data)
 
 class VotingResDetail(APIView):
@@ -268,15 +282,23 @@ def chstatusAppl(request, id, format=None):
 
 @api_view(['POST'])
 def addToAppl(request, id, format=None):
+    ssid = request.COOKIES.get("session_id", -1)
+    username = session_storage.get(ssid)
+    if not username:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    else:
+        user = get_object_or_404(User, username=username.decode('utf-8'))
+
+
     percent = request.data.get("percent", 0)
     try:
-        Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+        Appl = get_object_or_404(VotingRes, creator=user.id, status="черновик")
         logging.debug(Appl)
     except:
-        serializer = VotingResSerializer(data={"creator": get_creator()})
+        serializer = VotingResSerializer(data={"creator": user.id})
         if serializer.is_valid():
             serializer.save()
-        Appl = get_object_or_404(VotingRes, creator=get_creator(), status="черновик")
+        Appl = get_object_or_404(VotingRes, creator=user.id, status="черновик")
         logging.debug(Appl)
     ser = ApplservSerializer(data={"votingRes":Appl.id, "nameOption": id, "percentageofvotes": float(percent)})
     if ser.is_valid():
@@ -337,11 +359,10 @@ class UserViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 
-@permission_classes([AllowAny])
+
 @authentication_classes([])
-# @csrf_exempt
-@swagger_auto_schema(method='post', request_body=UsersSerializer)
-@api_view(['Post'])
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def login_view(request):
     username = request.data.get("username") # допустим передали username и password
     password = request.data.get("password")
@@ -352,11 +373,11 @@ def login_view(request):
 
         response = HttpResponse("{'status': 'ok'}")
         response.set_cookie("session_id", random_key)
-
         return response
     else:
         return HttpResponse("{'status': 'error', 'error': 'login failed'}")
 
+@api_view(('GET',))
 def logout_view(request):
-    logout(request._request)
+    logout(request)
     return Response({'status': 'Success'})

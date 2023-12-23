@@ -54,5 +54,7 @@ urlpatterns = [
     path('applications/<int:id>/chstatus/', views.chstatusAppl),
     path('applications/<int:idAppl>/<int:idServ>/', views.MM.as_view()),
     path('login',  views.login_view, name='login'),
+    path('accounts/login/',  views.login_view, name='login'),
     path('logout', views.logout_view, name='logout'),
+    path('accounts/logout/', views.logout_view, name='logout'),
 ]

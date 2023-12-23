@@ -44,7 +44,7 @@ class User(AbstractBaseUser, PermissionsMixin): # Field name made lowercase.
     phone = models.TextField(blank=True, null=True, unique=True)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = 'username'
     objects = UserManager()
     class Meta:
         db_table = 'User'
