@@ -43,11 +43,11 @@ class ApplservSerializer(serializers.ModelSerializer):
             return new_fields
 
 class UsersSerializer(serializers.ModelSerializer):
-    is_staff = serializers.BooleanField(default=False, required=False)
-    is_superuser = serializers.BooleanField(default=False, required=False)
+    #is_staff = serializers.BooleanField(default=False, required=False)
+    #is_superuser = serializers.BooleanField(default=False, required=False)
     class Meta:
         model = User
-        fields = ["id", "username", "email", "phone", "password", "is_staff", "is_superuser"]
+        fields = ["id", "username", "email", "phone", "password"]  # , "is_staff", "is_superuser"
 
         def get_fields(self):
             new_fields = OrderedDict()
