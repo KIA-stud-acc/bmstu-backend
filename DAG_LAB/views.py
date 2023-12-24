@@ -114,6 +114,7 @@ class NameOptionDetail(APIView):
         i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
         return Response(i)
 
+    @csrf_exempt
     @method_permission_classes((IsManager,))
     def delete(self, request, id, format=None):
         if str(id) + "/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
@@ -125,6 +126,7 @@ class NameOptionDetail(APIView):
         NameOption.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @csrf_exempt
     @method_permission_classes((IsManager,))
     def post(self, request, id, format=None):
         src = request.data.get("src", 0)
@@ -166,6 +168,7 @@ class NameOptionDetail(APIView):
 
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
+    @csrf_exempt
     @method_permission_classes((IsManager,))
     @swagger_auto_schema(request_body=NameOptionsSerializer)
     def put(self, request, id, format=None):
@@ -245,6 +248,8 @@ class VotingResDetail(APIView):
             res["Application"]["moderator"] = \
             list(User.objects.values("id", "username", "mail", "phone").filter(id=res["Application"]["moderator"]))[0]
         return Response(res)
+
+    @csrf_exempt
     def put(self, request, id, format=None):
         user = check_session(request)
         try:
@@ -260,7 +265,7 @@ class VotingResDetail(APIView):
             return Response(ser.data)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-
+@csrf_exempt
 @api_view(['Put'])
 def formAppl(request, format=None):
     user = check_session(request)
@@ -274,7 +279,7 @@ def formAppl(request, format=None):
     ser = VotingResSerializer(Appl)
     return Response(ser.data)
 
-
+@csrf_exempt
 @api_view(['DELETE'])
 def delAppl(request, format=None):
     user = check_session(request)
@@ -287,7 +292,7 @@ def delAppl(request, format=None):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
+@csrf_exempt
 @swagger_auto_schema(method='Put', request_body=VotingResSerializer)
 @api_view(['Put'])
 @permission_classes((IsManager,))
@@ -309,7 +314,7 @@ def chstatusAppl(request, id, format=None):
         return Response(ser.data)
     return Response(status=status.HTTP_403_FORBIDDEN)
 
-
+@csrf_exempt
 @api_view(['POST'])
 def addToAppl(request, id, format=None):
     user = check_session(request)
@@ -336,7 +341,7 @@ def addToAppl(request, id, format=None):
 
 class MM(APIView):
 
-
+    @csrf_exempt
     def delete(self, request, idAppl, idServ, format=None):
         user = check_session(request)
         try:
@@ -350,6 +355,7 @@ class MM(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @csrf_exempt
     def put(self, request, idAppl, idServ, format=None):
         user = check_session(request)
         try:
@@ -395,6 +401,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
 
 
+@csrf_exempt
 @swagger_auto_schema(method='post', request_body=UsersSerializer)
 @authentication_classes([])
 @api_view(['Post'])
