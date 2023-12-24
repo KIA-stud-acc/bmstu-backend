@@ -66,8 +66,22 @@ class NameOptionsList(APIView):
     model_class = NameOptions
     serializer_class = NameOptionsSerializer
     def get(self, request, format=None):
+        ssid = request.COOKIES.get("session_id", -1)
+        username = session_storage.get(ssid)
+        if not username:
+            sear = request.GET.get('text', "")
+            NOList = self.model_class.objects.filter(status="действует").filter(name__icontains=sear).order_by('name')
+            serializer = self.serializer_class(NOList, many=True)
+            for i in serializer.data:
+                i["image_src"] = i["image_src"].replace("127.0.0.1",
+                                                        "192.168.31.235")  # socket.gethostbyname(socket.gethostname()))
+                i["image_src"] = i["image_src"].replace("localhost",
+                                                        "192.168.31.235")  # socket.gethostbyname(socket.gethostname()))
+            return Response({"voting": serializer.data})
+        else:
+            user = get_object_or_404(User, username=username.decode('utf-8'))
         try:
-            Appl = get_object_or_404(VotingRes, creator=1, status="черновик").id
+            Appl = get_object_or_404(VotingRes, creator=user.id, status="черновик").id
         except:
             Appl = None
         sear = request.GET.get('text', "")
