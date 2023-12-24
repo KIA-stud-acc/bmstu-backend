@@ -94,6 +94,7 @@ class NameOptionsList(APIView):
 
     @method_permission_classes((IsManager,))
     @swagger_auto_schema(request_body=NameOptionsSerializer)
+    @csrf_exempt
     def post(self, request, format=None):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
@@ -402,6 +403,7 @@ def login_view(request):
     password = request.data.get("password")
     user = authenticate(request, username=username, password=password)
     if user is not None:
+        login(request, user)
         random_key = uuid.uuid4()
         session_storage.set(str(random_key), username)
 
