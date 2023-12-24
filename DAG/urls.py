@@ -57,4 +57,5 @@ urlpatterns = [
     #path('accounts/login/',  views.login_view, name='login'),
     path('logout', views.logout_view, name='logout'),
     #path('accounts/logout/', views.logout_view, name='logout'),
+    path('applications/putQuantityOfVotes/', views.putQuantityOfVotes),
 ]

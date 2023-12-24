@@ -426,3 +426,17 @@ def logout_view(request):
     session_storage.delete(ssid)
     logout(request)
     return Response({'status': 'Success'})
+
+
+@csrf_exempt
+@api_view(['Put'])
+def putQuantityOfVotes(request):
+    if request.data.get('Key',-1) != 123456:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    try:
+        Appl = get_object_or_404(VotingRes, id=request.data.get('Id',-1))
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    Appl.QuantityOfVotes = request.data.get("QuantityOfVotes", 0)
+    Appl.save()
+    return Response({'status': 'Success'})

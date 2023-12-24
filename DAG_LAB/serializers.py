@@ -21,7 +21,7 @@ class NameOptionsSerializer(serializers.ModelSerializer):
 class VotingResSerializer(serializers.ModelSerializer):
     class Meta:
         model = VotingRes
-        fields = ["id", "status", "creator", "moderator", "date_of_creation", "date_of_formation", "date_of_completion", "description"]
+        fields = ["id", "status", "creator", "moderator", "date_of_creation", "date_of_formation", "date_of_completion", "description", "QuantityOfVotes"]
 
         def get_fields(self):
             new_fields = OrderedDict()

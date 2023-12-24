@@ -59,6 +59,7 @@ class VotingRes(models.Model):
     date_of_formation = models.DateTimeField(db_column='date of formation', blank=True, null=True)  # Field renamed to remove unsuitable characters.
     date_of_completion = models.DateTimeField(db_column='date of completion', blank=True, null=True)  # Field renamed to remove unsuitable characters.
     description = models.TextField(blank=True, null=True)
+    QuantityOfVotes = models.IntegerField(db_column='QuantityOfVotes', null=True)
 
 
     class Meta:
