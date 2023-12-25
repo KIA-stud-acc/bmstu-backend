@@ -224,16 +224,23 @@ class VotingResDetail(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, id, format=None):
         user = check_session(request)
-        if user.is_staff:
+        if id == 0:
             try:
-                Appl = self.model_class.objects.filter(id=id)[0]
+                Appl = self.model_class.objects.filter(status="черновик").filter(creator=user.id)[0]
             except IndexError:
                 return Response(status=status.HTTP_404_NOT_FOUND)
         else:
-            try:
-                Appl = self.model_class.objects.filter(id=id).filter(creator=user.id)[0]
-            except IndexError:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+            if user.is_staff:
+                try:
+                    Appl = self.model_class.objects.filter(id=id)[0]
+                except IndexError:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+            else:
+                try:
+                    Appl = self.model_class.objects.filter(id=id).filter(creator=user.id)[0]
+                except IndexError:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+
         ApplVot = Applserv.objects.filter(votingRes=id)
         Voting = NameOptions.objects.filter(id__in=[obj['nameOption'] for obj in list(ApplVot.values("nameOption"))])
         serializer1 = self.serializer_class(Appl)
@@ -243,10 +250,10 @@ class VotingResDetail(APIView):
             vote["percentage"] = get_object_or_404(Applserv, nameOption=vote["id"], votingRes=id).percentageofvotes
         if res["Application"]["creator"]:
             res["Application"]["creator"] = \
-            list(User.objects.values("id", "username", "mail", "phone").filter(id=res["Application"]["creator"]))[0]
+            list(User.objects.values("id", "username", "email", "phone").filter(id=res["Application"]["creator"]))[0]
         if res["Application"]["moderator"]:
             res["Application"]["moderator"] = \
-            list(User.objects.values("id", "username", "mail", "phone").filter(id=res["Application"]["moderator"]))[0]
+            list(User.objects.values("id", "username", "email", "phone").filter(id=res["Application"]["moderator"]))[0]
         return Response(res)
 
     @csrf_exempt
