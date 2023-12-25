@@ -58,4 +58,5 @@ urlpatterns = [
     path('logout', views.logout_view, name='logout'),
     #path('accounts/logout/', views.logout_view, name='logout'),
     path('applications/putQuantityOfVotes/', views.putQuantityOfVotes),
+    path('user/me', views.userInfo),
 ]

@@ -447,3 +447,10 @@ def putQuantityOfVotes(request):
     Appl.QuantityOfVotes = request.data.get("QuantityOfVotes", 0)
     Appl.save()
     return Response({'status': 'Success'})
+
+
+@api_view(('GET',))
+def userInfo(request):
+    user = check_session(request)
+    return Response(UsersSerializer(user).data)
+
