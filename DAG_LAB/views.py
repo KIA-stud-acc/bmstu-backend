@@ -47,7 +47,7 @@ def check_session(request):
     ssid = request.COOKIES.get("session_id", -1)
     username = session_storage.get(ssid)
     if not username:
-        return Response(status=status.HTTP_403_FORBIDDEN)
+        return -1
     else:
         return get_object_or_404(User, username=username.decode('utf-8'))
 
@@ -191,6 +191,8 @@ class VotingResList(APIView):
 
     def get(self, request, format=None):
         user = check_session(request)
+        if user == -1:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         stat = request.GET.get('status', "")
         dateFrom = request.GET.get('dateFrom', "0001-01-01")
         dateTo = request.GET.get('dateTo', "9999-12-01")
@@ -224,6 +226,8 @@ class VotingResDetail(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, id, format=None):
         user = check_session(request)
+        if user == -1:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         if id == 0:
             try:
                 Appl = self.model_class.objects.filter(status="черновик").filter(creator=user.id)[0]
@@ -259,6 +263,8 @@ class VotingResDetail(APIView):
     @csrf_exempt
     def put(self, request, id, format=None):
         user = check_session(request)
+        if user == -1:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         try:
             Appl = get_object_or_404(VotingRes, id=id, creator=user.id)
         except:
@@ -276,6 +282,8 @@ class VotingResDetail(APIView):
 @api_view(['Put'])
 def formAppl(request, format=None):
     user = check_session(request)
+    if user == -1:
+        return Response(status=status.HTTP_403_FORBIDDEN)
     try:
         Appl = get_object_or_404(VotingRes, creator=user.id, status="черновик")
     except:
@@ -290,6 +298,8 @@ def formAppl(request, format=None):
 @api_view(['DELETE'])
 def delAppl(request, format=None):
     user = check_session(request)
+    if user == -1:
+        return Response(status=status.HTTP_403_FORBIDDEN)
     try:
         Appl = get_object_or_404(VotingRes, creator=user.id, status="черновик")
     except:
@@ -305,6 +315,8 @@ def delAppl(request, format=None):
 @permission_classes((IsManager,))
 def chstatusAppl(request, id, format=None):
     user = check_session(request)
+    if user == -1:
+        return Response(status=status.HTTP_403_FORBIDDEN)
     #if user.is_staff == False:
     #    return Response(status=status.HTTP_403_FORBIDDEN)
     try:
@@ -325,7 +337,8 @@ def chstatusAppl(request, id, format=None):
 @api_view(['POST'])
 def addToAppl(request, id, format=None):
     user = check_session(request)
-
+    if user == -1:
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     percent = request.data.get("percent", 0)
     try:
@@ -351,6 +364,8 @@ class MM(APIView):
     @csrf_exempt
     def delete(self, request, idAppl, idServ, format=None):
         user = check_session(request)
+        if user == -1:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         try:
             get_object_or_404(VotingResSerializer, id=idAppl, creator=user.id)
         except:
@@ -365,6 +380,8 @@ class MM(APIView):
     @csrf_exempt
     def put(self, request, idAppl, idServ, format=None):
         user = check_session(request)
+        if user == -1:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         try:
             get_object_or_404(VotingResSerializer, id=idAppl, creator=user.id)
         except:
@@ -452,5 +469,8 @@ def putQuantityOfVotes(request):
 @api_view(('GET',))
 def userInfo(request):
     user = check_session(request)
+    if user == -1:
+        return Response(status=status.HTTP_403_FORBIDDEN)
     return Response(UsersSerializer(user).data)
 
+#<Response status_code=403, "text/html; charset=utf-8">
