@@ -39,6 +39,7 @@ class NameOptions(models.Model):
 
 
 class User(AbstractBaseUser, PermissionsMixin): # Field name made lowercase.
+    id = models.AutoField(primary_key=True)
     username = models.TextField(db_column='name', unique=True)
     email = models.EmailField(("email адрес"), unique=True)
     phone = models.TextField(blank=True, null=True, unique=True)
@@ -53,9 +54,9 @@ class User(AbstractBaseUser, PermissionsMixin): # Field name made lowercase.
 class VotingRes(models.Model):
     id = models.AutoField(db_column='ID', primary_key=True)  # Field name made lowercase.
     status = models.TextField(default="черновик", blank=True, null=True)
-    creator = models.ForeignKey(User, models.DO_NOTHING, db_column='creator', blank=True, null=True)
+    creator = models.ForeignKey(User, models.DO_NOTHING, db_column='creator', blank=True)
     moderator = models.ForeignKey(User, models.DO_NOTHING, db_column='moderator', related_name='votingres_moderator_set', blank=True, null=True)
-    date_of_creation = models.DateTimeField(auto_now=True, db_column='date of creation', blank=True, null=True)  # Field renamed to remove unsuitable characters.
+    date_of_creation = models.DateTimeField(auto_now=True, db_column='date of creation', blank=True)  # Field renamed to remove unsuitable characters.
     date_of_formation = models.DateTimeField(db_column='date of formation', blank=True, null=True)  # Field renamed to remove unsuitable characters.
     date_of_completion = models.DateTimeField(db_column='date of completion', blank=True, null=True)  # Field renamed to remove unsuitable characters.
     description = models.TextField(blank=True, null=True)

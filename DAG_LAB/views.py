@@ -92,10 +92,12 @@ class NameOptionsList(APIView):
             i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
         return Response({"voting":serializer.data, "draftID": Appl})
 
-    @method_permission_classes((IsManager,))
     @swagger_auto_schema(request_body=NameOptionsSerializer)
     @csrf_exempt
     def post(self, request, format=None):
+        user = check_session(request)
+        if user == -1 or user.is_staff == False:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -115,8 +117,10 @@ class NameOptionDetail(APIView):
         return Response(i)
 
     @csrf_exempt
-    @method_permission_classes((IsManager,))
     def delete(self, request, id, format=None):
+        user = check_session(request)
+        if user == -1 or user.is_staff == False:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         if str(id) + "/" in [obj.object_name for obj in client.list_objects(bucket_name="images")]:
             for obj in [obj.object_name for obj in client.list_objects(bucket_name="images", prefix=str(id) + "/")]:
                 client.remove_object(bucket_name="images", object_name=obj)
@@ -127,8 +131,10 @@ class NameOptionDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @csrf_exempt
-    @method_permission_classes((IsManager,))
     def post(self, request, id, format=None):
+        user = check_session(request)
+        if user == -1 or user.is_staff == False:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         src = request.data.get("src", 0)
         name = request.data.get("name", str(id))
         NameOption = get_object_or_404(self.model_class, id=id)
@@ -169,12 +175,14 @@ class NameOptionDetail(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
     @csrf_exempt
-    @method_permission_classes((IsManager,))
     @swagger_auto_schema(request_body=NameOptionsSerializer)
     def put(self, request, id, format=None):
         """
         Обновляет информацию о голосовании (для модератора)
         """
+        user = check_session(request)
+        if user == -1 or user.is_staff == False:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         NameOption = get_object_or_404(self.model_class, id=id)
         serializer = self.serializer_class(NameOption, data=request.data, partial=True)
 
@@ -223,14 +231,14 @@ class VotingResList(APIView):
 class VotingResDetail(APIView):
     model_class = VotingRes
     serializer_class = VotingResSerializer
-    permission_classes = [IsAuthenticated]
     def get(self, request, id, format=None):
         user = check_session(request)
         if user == -1:
             return Response(status=status.HTTP_403_FORBIDDEN)
         if id == 0:
             try:
-                Appl = self.model_class.objects.filter(status="черновик").filter(creator=user.id)[0]
+                Appl = self.model_class.objects.filter(status="черновик").filter(creator__id=user.id)[0]
+
             except IndexError:
                 return Response(status=status.HTTP_404_NOT_FOUND)
         else:
@@ -241,17 +249,17 @@ class VotingResDetail(APIView):
                     return Response(status=status.HTTP_404_NOT_FOUND)
             else:
                 try:
-                    Appl = self.model_class.objects.filter(id=id).filter(creator=user.id)[0]
+                    Appl = self.model_class.objects.filter(id=id).filter(creator__id=user.id)[0]
                 except IndexError:
                     return Response(status=status.HTTP_404_NOT_FOUND)
 
-        ApplVot = Applserv.objects.filter(votingRes=id)
+        ApplVot = Applserv.objects.filter(votingRes=Appl.id)
         Voting = NameOptions.objects.filter(id__in=[obj['nameOption'] for obj in list(ApplVot.values("nameOption"))])
         serializer1 = self.serializer_class(Appl)
         serializer2 = NameOptionsSerializer(Voting, many=True)
         res = {"Application": serializer1.data, "Voting": serializer2.data}
         for vote in res["Voting"]:
-            vote["percentage"] = get_object_or_404(Applserv, nameOption=vote["id"], votingRes=id).percentageofvotes
+            vote["percentage"] = get_object_or_404(Applserv, nameOption=vote["id"], votingRes=Appl.id).percentageofvotes
         if res["Application"]["creator"]:
             res["Application"]["creator"] = \
             list(User.objects.values("id", "username", "email", "phone").filter(id=res["Application"]["creator"]))[0]
@@ -312,10 +320,9 @@ def delAppl(request, format=None):
 @csrf_exempt
 @swagger_auto_schema(method='Put', request_body=VotingResSerializer)
 @api_view(['Put'])
-@permission_classes((IsManager,))
 def chstatusAppl(request, id, format=None):
     user = check_session(request)
-    if user == -1:
+    if user == -1 or user.is_staff == False:
         return Response(status=status.HTTP_403_FORBIDDEN)
     #if user.is_staff == False:
     #    return Response(status=status.HTTP_403_FORBIDDEN)
@@ -323,7 +330,8 @@ def chstatusAppl(request, id, format=None):
         Appl = get_object_or_404(VotingRes, id=id)
     except:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    stat = request.data.get('status', 0)
+    stat = request.GET.get('status', 0)
+    logging.debug(stat)
     if Appl.status == "сформирован" and stat in ["отклонён", "завершён"]:  #list(Users.objects.filter(id=get_admin()).values())[0]['is_staff'] is True and
         Appl.status = stat
         Appl.moderator_id = user.id
@@ -434,7 +442,7 @@ def login_view(request):
     password = request.data.get("password")
     user = authenticate(request, username=username, password=password)
     if user is not None:
-        login(request, user)
+        #login(request, user)
         random_key = uuid.uuid4()
         session_storage.set(str(random_key), username)
 
@@ -448,7 +456,7 @@ def login_view(request):
 def logout_view(request):
     ssid = request.COOKIES.get("session_id", -1)
     session_storage.delete(ssid)
-    logout(request)
+    #logout(request)
     return Response({'status': 'Success'})
 
 
