@@ -228,6 +228,7 @@ class VotingResList(APIView):
                     i["moderator"] = list(User.objects.values("id", "username", "email", "phone").filter(id=i["moderator"]))[0]
         return Response(serializer.data)
 
+
 class VotingResDetail(APIView):
     model_class = VotingRes
     serializer_class = VotingResSerializer
