@@ -236,11 +236,12 @@ class VotingResDetail(APIView):
         user = check_session(request)
         if user == -1:
             return Response(status=status.HTTP_403_FORBIDDEN)
-        if id == 0:
+        if id == "current":
             try:
                 Appl = self.model_class.objects.filter(status="черновик").filter(creator__id=user.id)[0]
 
             except IndexError:
+                logging.debug(1)
                 return Response(status=status.HTTP_404_NOT_FOUND)
         else:
             if user.is_staff:
@@ -464,7 +465,10 @@ def logout_view(request):
 @csrf_exempt
 @api_view(['Put'])
 def putQuantityOfVotes(request):
+
+    logging.debug(1)
     if request.data.get('Key',-1) != 123456:
+        logging.debug(1)
         return Response(status=status.HTTP_403_FORBIDDEN)
     try:
         Appl = get_object_or_404(VotingRes, id=request.data.get('Id',-1))

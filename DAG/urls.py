@@ -48,7 +48,7 @@ urlpatterns = [
     path('vybory/<int:id>/', views.NameOptionDetail.as_view()),
     path('vybory/<int:id>/addToAppl/', views.addToAppl),
     path('applications/', views.VotingResList.as_view()),
-    path('applications/<int:id>/', views.VotingResDetail.as_view()),
+    path('applications/<id>/', views.VotingResDetail.as_view()),
     path('applications/form/', views.formAppl),
     path('applications/delete/', views.delAppl),
     path('applications/<int:id>/chstatus/', views.chstatusAppl),
