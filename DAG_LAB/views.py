@@ -1,5 +1,7 @@
 
 import psycopg2
+from django.views.decorators.csrf import csrf_exempt
+
 from DAG_LAB.models import *
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -19,7 +21,6 @@ from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAuthenticated
-from django.views.decorators.csrf import csrf_exempt
 from DAG_LAB.permissions import IsManager
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 import redis
@@ -73,10 +74,12 @@ class NameOptionsList(APIView):
             NOList = self.model_class.objects.filter(status="действует").filter(name__icontains=sear).order_by('name')
             serializer = self.serializer_class(NOList, many=True)
             for i in serializer.data:
-                i["image_src"] = i["image_src"].replace("127.0.0.1",
-                                                        "192.168.31.235")  # socket.gethostbyname(socket.gethostname()))
-                i["image_src"] = i["image_src"].replace("localhost",
-                                                        "192.168.31.235")  # socket.gethostbyname(socket.gethostname()))
+                try:
+                    i["image_src"] = i["image_src"].replace("127.0.0.1",
+                                                            "192.168.31.235")  # socket.gethostbyname(socket.gethostname()))
+                    i["image_src"] = i["image_src"].replace("localhost",
+                                                            "192.168.31.235")  # socket.gethostbyname(socket.gethostname()))
+                except: pass
             return Response({"voting": serializer.data})
         else:
             user = get_object_or_404(User, username=username.decode('utf-8'))
@@ -88,8 +91,11 @@ class NameOptionsList(APIView):
         NOList = self.model_class.objects.filter(status = "действует").filter(name__icontains=sear).order_by('name')
         serializer = self.serializer_class(NOList, many=True)
         for i in serializer.data:
-            i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
-            i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
+            try:
+                i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
+                i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
+            except:
+                pass
         return Response({"voting":serializer.data, "draftID": Appl})
 
     @swagger_auto_schema(request_body=NameOptionsSerializer)
@@ -112,8 +118,11 @@ class NameOptionDetail(APIView):
         NameOption = self.model_class.objects.filter(id=id)[0]
         serializer1 = self.serializer_class(NameOption)
         i = serializer1.data
-        i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
-        i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
+        try:
+            i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
+            i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
+        except:
+            pass
         return Response(i)
 
     @csrf_exempt
@@ -423,10 +432,10 @@ class UserViewSet(viewsets.ModelViewSet):
             self.object.set_password(self.object.password)
             self.object.save()
             headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED,
+            return Response({'status': 'ok', **serializer.data}, status=status.HTTP_201_CREATED,
                             headers=headers)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'status': 'error', "error":serializer.errors})
     def get_permissions(self):
         if self.action in ['create']:
             permission_classes = [AllowAny]
@@ -448,23 +457,34 @@ def login_view(request):
         random_key = uuid.uuid4()
         session_storage.set(str(random_key), username)
 
-        response = HttpResponse("{'status': 'ok'}")
+        response = Response({'status': 'ok'})
         response.set_cookie("session_id", random_key)
         return response
     else:
-        return HttpResponse("{'status': 'error', 'error': 'login failed'}")
+        return Response({'status': 'error', 'error': 'login failed'})
 
 @api_view(('GET',))
 def logout_view(request):
+    user = check_session(request)
+    if user == -1:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    try:
+        Appl = get_object_or_404(VotingRes, creator=user.id, status="черновик")
+        Appl.delete()
+    except:
+        pass
     ssid = request.COOKIES.get("session_id", -1)
     session_storage.delete(ssid)
+    response = Response({'status': 'Success'})
+    response.delete_cookie("session_id")
+
     #logout(request)
-    return Response({'status': 'Success'})
+    return response
 
 
 @csrf_exempt
 @api_view(['Put'])
-def putQuantityOfVotes(request):
+def putQuantityOfVotes(request, format=None):
 
     logging.debug(1)
     if request.data.get('Key',-1) != 123456:
