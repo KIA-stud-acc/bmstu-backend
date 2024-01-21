@@ -52,7 +52,7 @@ urlpatterns = [
     path('applications/form', views.formAppl),
     path('applications/delete', views.delAppl),
     path('applications/<int:id>/chstatus', views.chstatusAppl),
-    path('applications/<int:idAppl>/<int:idServ>/', views.MM.as_view()),
+    path('applications/<int:idServ>/mm', views.MM.as_view()),
     path('login',  views.login_view, name='login'),
     path('logout', views.logout_view, name='logout'),
     path('applications/putQuantityOfVotes', views.putQuantityOfVotes),
