@@ -331,7 +331,7 @@ def chstatusAppl(request, id, format=None):
     if Appl.status == "сформирован" and stat in ["отклонён", "завершён"]:  #list(Users.objects.filter(id=get_admin()).values())[0]['is_staff'] is True and
         Appl.status = stat
         Appl.moderator_id = user.id
-        Appl.date_of_completion = datetime.datetime.now()
+        Appl.date_of_completion = datetime.now()
         Appl.save()
         ser = VotingResSerializer(Appl)
         return Response(ser.data)
