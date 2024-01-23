@@ -74,9 +74,9 @@ class NameOptionsList(APIView):
         for i in serializer.data:
             try:
                 i["image_src"] = i["image_src"].replace("127.0.0.1",
-                                                        "192.168.31.235")  # socket.gethostbyname(socket.gethostname()))
+                                                        "192.168.56.1")  # socket.gethostbyname(socket.gethostname()))
                 i["image_src"] = i["image_src"].replace("localhost",
-                                                        "192.168.31.235")  # socket.gethostbyname(socket.gethostname()))
+                                                        "192.168.56.1")  # socket.gethostbyname(socket.gethostname()))
             except: pass
         return Response({"voting": serializer.data})
 
@@ -101,8 +101,8 @@ class NameOptionDetail(APIView):
         serializer1 = self.serializer_class(NameOption)
         i = serializer1.data
         try:
-            i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
-            i["image_src"] = i["image_src"].replace("localhost", "192.168.31.235")   #socket.gethostbyname(socket.gethostname()))
+            i["image_src"] = i["image_src"].replace("127.0.0.1", "192.168.56.1")   #socket.gethostbyname(socket.gethostname()))
+            i["image_src"] = i["image_src"].replace("localhost", "192.168.56.1")   #socket.gethostbyname(socket.gethostname()))
         except:
             pass
         return Response(i)
